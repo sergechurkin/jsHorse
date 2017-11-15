@@ -1,0 +1,328 @@
+﻿<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="jsHorse" content="3D animation on js based on the library of three.js and MD2 models. 3D анимация на js на базе библиотеки three.js и MD2 моделей.">
+    <title>jsHorse</title>
+    <style>
+html, body, canvas {
+    margin: 0px;
+    padding: 0px;
+    background-color: SkyBlue;
+    overflow: hidden;
+}
+#canvas {
+  display: none;
+}
+#div {
+  width:40%;
+  height:40%;
+  top:30%;
+  left:30%;
+  border: solid 1px gray;
+  border-radius: 3px;
+  background: whitesmoke;
+  position: fixed; 
+  overflow-y: scroll;
+  z-index: 1000;
+}
+.input, .error {
+    width: 50px;
+   }
+.error { border-color: red; } 
+.errormess { color: red; } 
+    </style>
+    <script src="js/three.min.js"></script>
+    <script src="js/OrbitControls.js"></script>
+</head>
+<body><canvas id="canvas"></canvas><div id="div"></div>
+    <script src="js/tags_forms.js"></script>
+    <script>
+
+const canvas = document.querySelector("#canvas");
+  // Initialize the GL context
+const gl = canvas.getContext("webgl");
+// Only continue if WebGL is available and working
+if (!gl) {
+    body.innerHTML = "<h1>Unable to initialize WebGL. Your browser or machine may not support it.</h1>";
+    window.stop();
+}
+
+div.style.visibility = 'hidden';
+
+var numHoses = getCookie('numHoses');
+if ( numHoses == undefined) numHoses = 128;
+
+var requestId = null;
+var webGLRenderer;
+var camera, scene;
+var clock;
+var controls;
+
+var pointlight;
+var mesh = [];
+mesh[0] = [];
+mesh[1] = []; 
+
+var raycaster, mouse;
+var intersects, selectedObject;
+
+var moveobjects = [{ scale: 1, filejson:'horse.js'},
+                  { scale: 1/20, filejson:'bird_final.js'}];
+var colors = [0x000000, 0xA52A2A, 0xFF0000, 0xFFA500, 0xFFD700,	0xFFFF00, 0xFFFFE0, 0xFFFFFF];
+var isClick = false;
+var nameClick = '';
+var yfly = 100;
+//Initialize function
+var init = function () {
+     clock = new THREE.Clock()
+     scene = new THREE.Scene();
+     scene.fog = new THREE.Fog( 0x87CEEB, 1500, 4000 );
+     camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 10000);
+     webGLRenderer = new THREE.WebGLRenderer();
+     webGLRenderer.setClearColor(new THREE.Color(0x87CEEB, 1.0));
+     webGLRenderer.setSize(window.innerWidth, window.innerHeight);
+     webGLRenderer.shadowMapEnabled = true;
+     webGLRenderer.shadowMapType = THREE.PCFSoftShadowMap;
+     camera.position.x = -3000;
+     camera.position.y = -1440;
+     camera.position.z = -2500;
+//     camera.position.set( 0, -1500, 0 );
+//     camera.rotation.z = -100 * Math.PI / 180;
+//     camera.rotation.x = -100 * Math.PI / 180;
+     camera.lookAt(new THREE.Vector3(0, -1500, 0));
+     controls = new THREE.OrbitControls( camera, webGLRenderer.domElement );
+     controls.target.set( 0, -1490, 0 );
+
+     controls.maxPolarAngle = 89 * Math.PI / 180;
+     controls.minDistance = 500;
+     controls.maxDistance = 1500;
+
+     pointlight = new THREE.PointLight( 0x4aa592, 1, 900 ); 
+     pointlight.position.set( 0, -1100, -100 ); 
+     scene.add( pointlight );
+     var light = new THREE.SpotLight( 0x4aa592, 2, 500 );
+     light.position.set( 0, 20, 1 );
+     light.castShadow = true;
+     light.shadowMapWidth = 1024;
+     light.shadowMapHeight = 1024;
+     light.shadowMapDarkness = 0.98;
+     scene.add(light);
+     var lightGlobal, materials;
+     scene.add( new THREE.AmbientLight( 0x666666 ) );
+     lightGlobal = new THREE.DirectionalLight( 0xFFFFFF, 1 );
+     lightGlobal.position.set( 50, 200, 100 );
+     lightGlobal.position.multiplyScalar( 1.3 );
+     lightGlobal.castShadow = true;
+      scene.add( lightGlobal );
+     var groundTexture = THREE.ImageUtils.loadTexture( "images/grasslight-big.jpg" );
+     var mapHeight = THREE.ImageUtils.loadTexture( "images/grasslight-big.jpg" );
+     mapHeight.anisotropy = 40;
+     mapHeight.repeat.set( 25, 25 );
+     var gg = new THREE.PlaneBufferGeometry( 10000, 10000);                
+     var gm = new THREE.MeshPhongMaterial( { color: 0xffffff, map: groundTexture, specular: 0x333333, shininess: 5, bumpMap: mapHeight, bumpScale: 0.85, metal: false } );
+     var ground = new THREE.Mesh( gg, gm );
+     ground.rotation.x = - Math.PI / 2;
+     ground.material.map.repeat.set( 8, 8 );
+     ground.material.map.wrapS = ground.material.map.wrapT = THREE.RepeatWrapping;
+     ground.receiveShadow = true;
+     ground.position.x = 0;
+     ground.position.z = 0 ;
+     ground.position.y = -1490;
+     scene.add( ground );
+     // Create horses and birds
+     function moveobjectload(imoveobjects) {
+         var mat;
+         var scale;
+         var objectscolor;
+         var loader = new THREE.JSONLoader();
+         loader.load("models/" + moveobjects[imoveobjects].filejson, function (geometry, mat) {
+             geometry.computeMorphNormals();
+             for (var i = 0; i < numHoses; i++) {
+                 objectscolor = colors[Math.round(Math.random()*8)];
+                 mat = new THREE.MeshLambertMaterial({
+                          map: THREE.ImageUtils.loadTexture("models/horse.jpg"),
+                          color: objectscolor, transparent: true,
+                          specular: objectscolor, shininess: 60,
+                          morphTargets: true, morphNormals: true,
+                          shading: THREE.SmoothShading,
+                          vertexColors: THREE.FaceColors
+                 });
+                 mesh[imoveobjects].push(new THREE.MorphAnimMesh(geometry, mat));
+                 mesh[imoveobjects][i].name = "horse" + i;
+                 mesh[imoveobjects][i].isOn = true;
+                 mesh[imoveobjects][i].visible = true;
+                 mesh[imoveobjects][i].color = objectscolor;
+                 mesh[imoveobjects][i].position.x = Math.round(Math.random()*2000);
+                 mesh[imoveobjects][i].position.z = -1000 + Math.round(Math.random()*2000);
+                 scale = moveobjects[imoveobjects].scale - moveobjects[imoveobjects].scale / 2 + Math.random()*(moveobjects[imoveobjects].scale / 2);
+                 mesh[imoveobjects][i].scale.set( scale, scale, scale )
+                 if (imoveobjects == 1) {
+                     mat.map = null;
+                     mesh[imoveobjects][i].name = "bird" + i;
+                     mesh[imoveobjects][i].color = mesh[0][i].color;
+                     mesh[imoveobjects][i].isOn = false;
+                     mesh[imoveobjects][i].visible = false;
+                     mesh[imoveobjects][i].position.x = mesh[0][i].position.x;
+                     mesh[imoveobjects][i].scale.x = mesh[0][i].scale.x * moveobjects[imoveobjects].scale;
+                     mesh[imoveobjects][i].scale.y = mesh[0][i].scale.y * moveobjects[imoveobjects].scale;
+                     mesh[imoveobjects][i].scale.z = mesh[0][i].scale.z * moveobjects[imoveobjects].scale;
+                 }
+                 mesh[imoveobjects][i].parseAnimations();
+                 mesh[imoveobjects][i].playAnimation("stand", 10);
+                 mesh[imoveobjects][i].position.y = -1493;
+                 mesh[imoveobjects][i].castShadow = true;
+                 mesh[imoveobjects][i].receiveShadow = true;
+                 mesh[imoveobjects][i].material.emissive = new THREE.Color(mesh[imoveobjects][i].color);
+                 mesh[imoveobjects][i].material.opacity = 1;
+                 mesh[imoveobjects][i].material.needsUpdate = true;
+                 scene.add(mesh[imoveobjects][i]);
+             }
+             if (imoveobjects == 1) return;
+             moveobjectload(1);
+         });
+     }
+     moveobjectload(0);
+    // Ray from camera to mouse to pick objects
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+    // To change color of by click mouse
+    window.addEventListener( 'click', onMouseClick, false );
+    function onMouseClick( event ) {
+        if (div.style.visibility == 'visible' && event.target.id != 'numHosesInput') {
+            div.style.visibility = 'hidden';
+            if (event.target.id == 'Ok') {
+                var elements = document.getElementsByTagName('input');
+                for (var i = 0; i < elements.length; i++) {
+                    if (elements[i].className === "error") return;
+                }
+                numHoses = Number(numHosesInput.value);
+                var date = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
+                document.cookie = 'numHoses' +  '=' + numHoses + '; path=/; expires=' + date.toUTCString();
+                window.location.reload();
+                return;
+            }
+            render();
+            return;
+        }
+        event.preventDefault();
+        var mouseVector = new THREE.Vector3(
+            ( event.clientX / window.innerWidth ) * 2 - 1,
+          - ( event.clientY / window.innerHeight ) * 2 + 1,
+            1 );
+        mouseVector.unproject( camera );
+        var raycaster = new THREE.Raycaster( camera.position, mouseVector.sub( camera.position ).normalize() );
+        // create an array containing all objects in the scene with which the ray intersects
+        var intersects = raycaster.intersectObjects( scene.children );
+        if (intersects.length > 0) {
+            selectedObject = intersects[0].object;
+            if (selectedObject.name.indexOf("horse") !== -1 || selectedObject.name.indexOf("bird") !== -1) {
+                if (selectedObject.isOn == true) {
+                    selectedObject.isOn = false;
+                    isClick = true;
+                    nameClick = selectedObject.name;
+                    if (selectedObject.name.indexOf("horse") !== -1) yfly = 50 + Math.round(Math.random()*100);
+                }
+            }
+        }
+    }   
+    document.body.appendChild( webGLRenderer.domElement );
+    render();
+         
+     function render() {
+         // Set ray from camera to mouse to detect objects
+         raycaster.setFromCamera( mouse, camera );    
+         intersects = raycaster.intersectObjects( scene.children );
+         var delta = clock.getDelta(); // Time from previus run animation frame
+//         ground.position.x += 1; // Move the ground
+//         ground.rotation.z -= Math.PI / 1000;
+         if (ground.position.x > 1500) { 
+             ground.position.x = 0;
+         }
+         for (i = 0; i < numHoses; i++)  {
+             if (mesh[0][i] == undefined) continue;
+             mesh[0][i].position.x -= Math.round(Math.random()*5); // Move
+             if (mesh[0][i].position.x < -2000) {
+                 mesh[0][i].position.x = 2000;
+                 mesh[0][i].position.z = -1000 + Math.round(Math.random()*2000);
+             }
+             if (mesh[1][i] == undefined) continue;
+             mesh[1][i].position.x = mesh[0][i].position.x;
+             mesh[1][i].position.z = mesh[0][i].position.z;
+             for (var j = 0; j < moveobjects.length; j++) {
+                 mesh[j][i].updateAnimation(delta * 1000); // Run
+                 if (isClick) {
+                    if (j == 0 && nameClick.indexOf("horse") !== -1 && i == Number(nameClick.replace(/horse/, ''))) {
+                        isClick = false;  
+                        mesh[0][i].isOn = false;
+                        mesh[1][i].isOn = true;
+                        mesh[1][i].material.opacity = 0.01;
+                    }
+                    if (j == 1 && nameClick.indexOf('bird') !== -1 && i == Number(nameClick.replace(/bird/, ''))) {
+                        isClick = false;  
+                        mesh[1][i].isOn = false;
+                        mesh[0][i].isOn = true;
+                    }
+                 }
+                 if (mesh[j][i].isOn) {
+                    if (mesh[j][i].material.opacity < 1) {
+                        mesh[j][i].material.opacity += 0.025;
+                        if (j == 1) mesh[j][i].position.y = mesh[0][i].position.y + yfly * mesh[j][i].material.opacity;
+                    }
+                    mesh[j][i].visible = true;
+                 } else {
+                    if (mesh[j][i].material.opacity > 0) {
+                        mesh[j][i].material.opacity -= 0.025;
+                        if (j == 1) mesh[j][i].position.y = mesh[0][i].position.y + yfly * mesh[j][i].material.opacity;
+                    }
+                    if (mesh[j][i].material.opacity < 0.01) mesh[j][i].visible = false;
+                 }
+             }
+         }
+         // Call AnimationFrame
+         requestId = requestAnimationFrame(render);
+         controls.update();
+         webGLRenderer.render(scene, camera);
+     }
+
+    function help() {
+        cancelAnimationFrame(requestId);
+        div.style.visibility = 'visible';
+        div.innerHTML = '<div>' + tag_h('2', 'jsHorse', 'limegreen') +
+            tag_h('5', 'Description and sources: <a href="https://github.com/sergechurkin/jsHorse">https://github.com/sergechurkin/jsHorse</a>') + 
+           '</div>';
+        div.innerHTML += tag_form('Input parameter', [
+          {tag: 'input', type: 'text', label: 'Number of horses', name: 'numHosesInput', value: numHoses}
+        ], [
+          {label: 'Ok', script: ''}, 
+          {label: 'Continue', script: ''},
+          {label: 'Reload', script: 'window.location.reload();'},
+          {label: 'Exit', script: 'window.close();'}
+        ]);
+    }
+
+    document.onkeypress = function(event) {
+      if (div.style.visibility == 'visible') return;
+      if (event.keyCode===112) help();
+      if (event.keyCode===27) cancelAnimationFrame(requestId);
+      if (event.keyCode===13) render();
+    }
+// right click
+    document.oncontextmenu = function(event) {
+      help();
+      return false; // Disalle standard context menu
+    }
+
+    window.addEventListener( 'resize', onWindowResize, false );
+    function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            webGLRenderer.setSize( window.innerWidth, window.innerHeight );
+
+    }
+};
+// Start Application
+init();
+    </script>
+  </body>
+</html>
