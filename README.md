@@ -11,7 +11,7 @@ converted to json format by [OutsideOfSociety service](http://oos.moxiecode.com/
 
 By mouse clicking the horse turns into a bird and back.
 
-By clicking on `F1` or mouse right clicking you can adjust the number of animated objects. By the `Esc` key, you can stop the animation, by `Enter` - start.
+By clicking on `F1` or mouse right clicking you can adjust the number of animated objects. By the `Esc` key, you can stop the animation, by `Enter` - start. The `b` button all horses transform into birds, button `h` - on the contrary.
 
 [Run application.]( http://sergechurkin.vacau.com/horse.html)
 
@@ -25,6 +25,6 @@ By clicking on `F1` or mouse right clicking you can adjust the number of animate
 
 По клику мыши лошадь превращается в птицу и обратно. 
 
-По нажатию на `F1` или клику на правую кнопку можно настроить количество анимируемых объектов. По кнопке `Esc` можно остановить анимацию, по `Enter` – запустить.
+По нажатию на `F1` или клику на правую кнопку можно настроить количество анимируемых объектов. По кнопке `Esc` можно остановить анимацию, по `Enter` – запустить. По кнопке `b` все лошали превращаются в птиц, по кнопке `h` - наоборот.
 
 [Запустить приложение.]( http://sergechurkin.vacau.com/horse.html)

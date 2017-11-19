@@ -31,6 +31,16 @@ html, body, canvas {
    }
 .error { border-color: red; } 
 .errormess { color: red; } 
+.text {
+    position: fixed;
+    left: 10px;
+    top: 10px;
+    color: white;
+    font-size: 20px;
+    background: relative;
+    opacity: 0.7;
+    z-index: 999
+}
     </style>
     <script src="js/three.min.js"></script>
     <script src="js/OrbitControls.js"></script>
@@ -52,7 +62,8 @@ div.style.visibility = 'hidden';
 
 var numHoses = getCookie('numHoses');
 if ( numHoses == undefined) numHoses = 128;
-
+var num_Hoses = numHoses;
+var num_Birds = 0;
 var requestId = null;
 var webGLRenderer;
 var camera, scene;
@@ -67,12 +78,11 @@ mesh[1] = [];
 var raycaster, mouse;
 var intersects, selectedObject;
 
-var moveobjects = [{ scale: 1, filejson:'horse.js'},
-                  { scale: 1/20, filejson:'bird_final.js'}];
+var moveobjects = [{ scale: 1, yfly: 0, filejson:'horse.js'},
+                  { scale: 1/20, yfly: 50, filejson:'bird_final.js'}];
 var colors = [0x000000, 0xA52A2A, 0xFF0000, 0xFFA500, 0xFFD700,	0xFFFF00, 0xFFFFE0, 0xFFFFFF];
 var isClick = false;
 var nameClick = '';
-var yfly = 100;
 //Initialize function
 var init = function () {
      clock = new THREE.Clock()
@@ -157,6 +167,7 @@ var init = function () {
                  mesh[imoveobjects][i].position.z = -1000 + Math.round(Math.random()*2000);
                  scale = moveobjects[imoveobjects].scale - moveobjects[imoveobjects].scale / 2 + Math.random()*(moveobjects[imoveobjects].scale / 2);
                  mesh[imoveobjects][i].scale.set( scale, scale, scale )
+                 mesh[imoveobjects][i].yfly = moveobjects[imoveobjects].yfly;
                  if (imoveobjects == 1) {
                      mat.map = null;
                      mesh[imoveobjects][i].name = "bird" + i;
@@ -167,6 +178,7 @@ var init = function () {
                      mesh[imoveobjects][i].scale.x = mesh[0][i].scale.x * moveobjects[imoveobjects].scale;
                      mesh[imoveobjects][i].scale.y = mesh[0][i].scale.y * moveobjects[imoveobjects].scale;
                      mesh[imoveobjects][i].scale.z = mesh[0][i].scale.z * moveobjects[imoveobjects].scale;
+                     mesh[imoveobjects][i].yfly = moveobjects[imoveobjects].yfly + Math.round(Math.random()*100);
                  }
                  mesh[imoveobjects][i].parseAnimations();
                  mesh[imoveobjects][i].playAnimation("stand", 10);
@@ -221,12 +233,17 @@ var init = function () {
                     selectedObject.isOn = false;
                     isClick = true;
                     nameClick = selectedObject.name;
-                    if (selectedObject.name.indexOf("horse") !== -1) yfly = 50 + Math.round(Math.random()*100);
                 }
             }
         }
     }   
     document.body.appendChild( webGLRenderer.domElement );
+
+    var textElem = document.createElement('div');
+    textElem.id = 'text';
+    textElem.className = 'text';
+    document.body.appendChild(textElem);
+
     render();
          
      function render() {
@@ -253,12 +270,16 @@ var init = function () {
                  mesh[j][i].updateAnimation(delta * 1000); // Run
                  if (isClick) {
                     if (j == 0 && nameClick.indexOf("horse") !== -1 && i == Number(nameClick.replace(/horse/, ''))) {
+                        num_Hoses--;
+                        num_Birds++;
                         isClick = false;  
                         mesh[0][i].isOn = false;
                         mesh[1][i].isOn = true;
                         mesh[1][i].material.opacity = 0.01;
                     }
                     if (j == 1 && nameClick.indexOf('bird') !== -1 && i == Number(nameClick.replace(/bird/, ''))) {
+                        num_Hoses++;
+                        num_Birds--;
                         isClick = false;  
                         mesh[1][i].isOn = false;
                         mesh[0][i].isOn = true;
@@ -267,18 +288,19 @@ var init = function () {
                  if (mesh[j][i].isOn) {
                     if (mesh[j][i].material.opacity < 1) {
                         mesh[j][i].material.opacity += 0.025;
-                        if (j == 1) mesh[j][i].position.y = mesh[0][i].position.y + yfly * mesh[j][i].material.opacity;
+                        if (j == 1) mesh[j][i].position.y = mesh[0][i].position.y + mesh[j][i].yfly * mesh[j][i].material.opacity;
                     }
                     mesh[j][i].visible = true;
                  } else {
                     if (mesh[j][i].material.opacity > 0) {
                         mesh[j][i].material.opacity -= 0.025;
-                        if (j == 1) mesh[j][i].position.y = mesh[0][i].position.y + yfly * mesh[j][i].material.opacity;
+                        if (j == 1) mesh[j][i].position.y = mesh[0][i].position.y + mesh[j][i].yfly * mesh[j][i].material.opacity;
                     }
                     if (mesh[j][i].material.opacity < 0.01) mesh[j][i].visible = false;
                  }
              }
          }
+         textElem.innerHTML = 'Hoses: ' + num_Hoses + '<br>Birds: ' + num_Birds;
          // Call AnimationFrame
          requestId = requestAnimationFrame(render);
          controls.update();
@@ -302,10 +324,39 @@ var init = function () {
     }
 
     document.onkeypress = function(event) {
-      if (div.style.visibility == 'visible') return;
-      if (event.keyCode===112) help();
-      if (event.keyCode===27) cancelAnimationFrame(requestId);
-      if (event.keyCode===13) render();
+//       console.log('event.charCode=' + event.charCode);
+       if (div.style.visibility == 'visible') return;
+       if (event.keyCode===112) help();
+       if (event.keyCode===27) cancelAnimationFrame(requestId);
+       if (event.keyCode===13) render();
+       if (event.charCode===98) {
+           num_Hoses = 0;
+           num_Birds = numHoses;
+           mesh[0].forEach(function(item, i, arr) {
+               if (item.isOn == true) {
+                   item.isOn = false;
+               }
+           });
+           mesh[1].forEach(function(item, i, arr) {
+               if (item.isOn == false) {
+                   item.isOn = true;
+               }
+           });
+       }
+       if (event.charCode===104) {
+           num_Hoses = numHoses;
+           num_Birds = 0;
+           mesh[1].forEach(function(item, i, arr) {
+               if (item.isOn == true) {
+                   item.isOn = false;
+               }
+           });
+           mesh[0].forEach(function(item, i, arr) {
+               if (item.isOn == false) {
+                   item.isOn = true;
+               }
+           });
+       }
     }
 // right click
     document.oncontextmenu = function(event) {
