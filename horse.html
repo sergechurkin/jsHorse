@@ -48,7 +48,7 @@ html, body, canvas {
 <body><canvas id="canvas"></canvas><div id="div"></div>
     <script src="js/tags_forms.js"></script>
     <script>
-
+/*
 const canvas = document.querySelector("#canvas");
   // Initialize the GL context
 const gl = canvas.getContext("webgl");
@@ -57,9 +57,7 @@ if (!gl) {
     body.innerHTML = "<h1>Unable to initialize WebGL. Your browser or machine may not support it.</h1>";
     window.stop();
 }
-
-div.style.visibility = 'hidden';
-
+*/
 var numHoses = getCookie('numHoses');
 if ( numHoses == undefined) numHoses = 128;
 var num_Hoses = numHoses;
@@ -92,15 +90,21 @@ function isMobile() {
             || useragent.indexOf('iPad') != -1;
 }
 var init = function () {
-     clock = new THREE.Clock()
-     scene = new THREE.Scene();
-     scene.fog = new THREE.Fog( 0x87CEEB, 1500, 4000 );
-     camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 10000);
-     webGLRenderer = new THREE.WebGLRenderer();
+     try {
+       webGLRenderer = new THREE.WebGLRenderer();
+     } catch(e) {
+       document.getElementById('div').innerHTML = "<h1>Unable to initialize WebGL. Your browser or machine may not support it.</h1>" + e.stack;
+       return false;
+     }
+     div.style.visibility = 'hidden';
      webGLRenderer.setClearColor(new THREE.Color(0x87CEEB, 1.0));
      webGLRenderer.setSize(window.innerWidth, window.innerHeight);
      webGLRenderer.shadowMapEnabled = true;
      webGLRenderer.shadowMapType = THREE.PCFSoftShadowMap;
+     clock = new THREE.Clock()
+     scene = new THREE.Scene();
+     scene.fog = new THREE.Fog( 0x87CEEB, 1500, 4000 );
+     camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 10000);
      camera.position.x = -3000;
      camera.position.y = -1440;
      camera.position.z = -2500;
@@ -387,12 +391,13 @@ var init = function () {
             webGLRenderer.setSize( window.innerWidth, window.innerHeight );
 
     }
+    return true;
 };
 var xhr1 = new XMLHttpRequest();
 xhr1.open('GET', 'src/count_log.php?token=eb3d372a302cac84802ab4a7ac66e34ec05820eb&page=horse', true);
 xhr1.send();
 // Start Application
-init();
+if (!init()) window.stop();
     </script>
   </body>
 </html>
