@@ -14,7 +14,7 @@ By mouse clicking the horse turns into a bird and back.
 By clicking on `F1` or mouse right clicking you can adjust the number of animated objects. By the `Esc` key, you can stop the animation, by `Enter` - start. The `b` button all horses transform into birds, button `h` - on the contrary.
 `Esc`/`Enter` - Stop/Start animation.
 
-[Run application.]( http://sergechurkin.vacau.com/horse.html)
+[Run application.]( https://foraminiferous-reli.000webhostapp.com/horse.html)
 
 3D анимация на js на базе библиотеки three.js и MD2 моделей.
 
@@ -29,4 +29,4 @@ By clicking on `F1` or mouse right clicking you can adjust the number of animate
 По нажатию на `F1` или клику на правую кнопку можно настроить количество анимируемых объектов. По кнопке `Esc` можно остановить анимацию, по `Enter` – запустить. По кнопке `b` все лошали превращаются в птиц, по кнопке `h` - наоборот.
 `Esc`/`Enter` - Остановить/запустить анимацию.
 
-[Запустить приложение.]( http://sergechurkin.vacau.com/horse.html)
+[Запустить приложение.]( https://foraminiferous-reli.000webhostapp.com/horse.html)
